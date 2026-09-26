@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { SAMPLE_DOCUMENTS, LegalDocument } from "../data/sampleDocuments";
+import { SAMPLE_DOCUMENTS } from "../data/sampleDocuments";
 import { analyzeDocument, RiskLevel } from "../lib/legalEngine";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { Card } from "../components/AnalysisPanel";

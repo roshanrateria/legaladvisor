@@ -10,7 +10,6 @@ export function Simplify() {
   const [customText, setCustomText] = useState<string>("");
   const [mode, setMode] = useState<"sample" | "custom">("sample");
   const [analyzing, setAnalyzing] = useState(false);
-  const [resultKey, setResultKey] = useState(0);
 
   const selectedDoc = useMemo(
     () => SAMPLE_DOCUMENTS.find((d) => d.id === selectedId)!,
@@ -32,11 +31,10 @@ export function Simplify() {
       pageCount: Math.max(1, Math.round(customText.length / 1800)),
     };
     return simplifyDocument(doc);
-  }, [mode, selectedDoc, customText, resultKey]);
+  }, [mode, selectedDoc, customText]);
 
   const handleAnalyze = () => {
     setAnalyzing(true);
-    setResultKey((k) => k + 1);
     setTimeout(() => setAnalyzing(false), 600);
   };
 
@@ -161,9 +159,6 @@ export function Simplify() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {result.bullets.map((b, i) => {
-              const matchingClause = simplifyDocument(selectedDoc).bullets.find(
-                (x) => x.heading === b.heading
-              );
               // Recover severity from a fresh analysis for the badge
               const sev =
                 i === 0 ? "moderate" : i === 1 ? "elevated" : i === 2 ? "elevated" : "low";

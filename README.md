@@ -1,107 +1,151 @@
-# React + TypeScript + Vite
+# Lexi
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## AI for Legal Assistance & Access
 
-Currently, two official plugins are available:
+Lexi is a document-grounded legal information assistant. It helps people understand common contracts, compare versions, identify clauses worth reviewing, ask questions with source evidence, and prepare a focused agenda for a licensed legal professional.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+> **Important:** Lexi provides general information and preparation support, not legal advice. It does not determine enforceability, predict an outcome, or replace a licensed attorney. Always check the original document, applicable jurisdiction, and current law before acting.
 
-## React Compiler
+## Why this solves the challenge
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Legal documents are often difficult to read and expensive to interpret. Lexi turns a contract into a sequence of understandable decisions:
 
-## Expanding the ESLint configuration
+1. **Understand:** plain-language summaries, reading complexity, parties, dates, rights, and obligations.
+2. **Compare:** side-by-side differences in termination, liability, intellectual property, disputes, and other material topics.
+3. **Prioritize:** severity-ranked risk findings with the exact source excerpt that triggered each finding.
+4. **Ask:** natural-language questions answered from the selected document, with citations and confidence labels.
+5. **Prepare:** practical next steps and questions to bring to a lawyer.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The app is designed for a person reviewing an employment agreement, lease, NDA, services agreement, loan, license, or terms of service. It uses safe sample documents by default so evaluators can explore every workflow without uploading confidential material.
 
-```js
-export default defineConfig([
-  # Lexi | Legal information, made legible
+## Product walkthrough
 
-  Lexi is a focused legal-information assistant for people who need to understand a contract before speaking with a professional. It turns dense documents into plain-language summaries, cited answers, risk signals, comparisons, and practical questions to take to a lawyer.
+- **Overview:** entry point with the six supported workflows and the transparency promise.
+- **Document Library:** browse representative legal documents and their risk/reading profiles.
+- **Document Simplifier:** translate clauses into plain language while preserving source text.
+- **Contract Comparator:** compare two documents by decision-relevant topics.
+- **Risk Detector:** inspect high-impact clauses, explanations, severity, and recommended follow-up.
+- **Legal Q&A:** ask a question and receive a grounded answer with quoted evidence when available.
+- **Action Generator:** create a checklist and lawyer questions from the analysis.
 
-  > Lexi provides information and preparation support, not legal advice. It does not replace a licensed attorney, and users should verify the original document and local law before acting.
+## Decision logic
 
-  ## Challenge fit
+The local engine in `src/lib/legalEngine.ts` is deliberately explainable:
 
-  **Vertical:** AI for Legal Assistance & Access
+- A clause lexicon maps patterns such as liability caps, indemnities, arbitration, IP assignment, non-competes, auto-renewal, and penalties to structured findings.
+- Each finding contains `category`, `severity`, `excerpt`, `explanation`, and `recommendation`.
+- Findings are sorted by severity so the user sees the most consequential review items first.
+- The Q&A engine first uses topic-specific responders, then scores keyword overlap against analyzed clauses.
+- If evidence is missing, it returns a low-confidence answer that says it could not find a direct answer instead of inventing one.
+- Jurisdiction-sensitive issues are framed as questions for professional review, not universal legal conclusions.
 
-  Lexi addresses the brief's core workflows:
+This is a prioritization and education system, not a legal research engine. Its risk score is a review signal, not a probability of liability or enforceability.
 
-  - **Simplify:** summaries, reading complexity, obligations, rights, and clause explanations.
-  - **Compare:** side-by-side termination, liability, intellectual property, disputes, and material differences.
-  - **Find risk:** severity-ranked clauses with source excerpt, explanation, and follow-up.
-  - **Ask questions:** document-grounded Q&A with quoted evidence and confidence labels.
-  - **Prepare next steps:** action checklists and questions for a legal professional.
+## AI architecture
 
-  ## How it works
+The default experience is deterministic and document-grounded, which makes the demo reproducible and safe to evaluate. An optional NVIDIA Nemotron path is available through the Vercel server function in `api/ask.ts`:
 
-  1. A user selects a document from the library.
-  2. The analysis engine scans it with a transparent clause lexicon and deterministic heuristics.
-  3. Findings are ranked by severity and retain the source excerpt that triggered them.
-  4. The UI turns findings into summaries, comparisons, answers, and an action plan.
-  5. Optional Vercel Q&A calls NVIDIA Nemotron through a server-side function. The browser never receives the API key. If model mode is disabled or unavailable, the deterministic grounded answer remains available.
+```text
+Browser Q&A -> /api/ask -> NVIDIA chat completions
+                    \-> deterministic answer remains the fallback
+```
 
-  The included documents are representative sample data so the project can be evaluated without uploading personal or confidential contracts.
+The browser never receives `NVIDIA_API_KEY`. The server validates method, input types, document length, and question length before making an upstream request. Model instructions require document-only answers, uncertainty when unsupported, plain language, and a legal-information disclaimer.
 
-  ## Responsible AI and security
+## Responsible AI and security
 
-  - Answers default to the local grounded engine; unsupported questions are reported instead of guessed.
-  - Every detected clause includes an excerpt, severity, explanation, and recommendation.
-  - Jurisdiction-sensitive topics are surfaced for professional review, not presented as universal conclusions.
-  - NVIDIA mode is opt-in with `VITE_ENABLE_NVIDIA=true`; server credentials are read only from deployment environment variables.
-  - Requests are bounded to prevent unexpectedly large prompts, and upstream failures return a safe fallback path.
-  - The app consistently states the legal-information boundary and never asks users to submit private data in the demo.
+- No API key, private contract, or user secret is committed to the repository.
+- Demo content is synthetic/representative sample data.
+- The model integration is opt-in with `VITE_ENABLE_NVIDIA=true`.
+- Upstream failures do not break the app; the grounded local answer remains available.
+- Prompts are bounded to reduce accidental cost and denial-of-service risk.
+- Citations come from document excerpts in the local engine; model-generated prose is not treated as proof.
+- The interface repeats that outputs are information, not advice.
+- Production work would add authentication, encrypted storage, retention controls, tenant isolation, audit logs, upload malware scanning, and privacy review.
 
-  ## Run locally
+## Accessibility and usability
 
-  ```bash
-  npm install
-  npm run dev
-  ```
+- The application uses semantic headings, navigation, sections, forms, labels, focus styles, and a keyboard skip link.
+- Color is paired with text labels such as risk level and confidence; color is not the only signal.
+- The layout is responsive from mobile navigation through wide desktop analysis views.
+- Motion is limited and the primary workflows remain usable with reduced-motion preferences supplied by the browser.
+- The remaining production accessibility gate should include automated axe checks and manual keyboard/screen-reader review across all routes.
 
-  Checks:
+## Run locally
 
-  ```bash
-  npm run lint
-  npm run build
-  ```
+Requirements: Node.js 20+, npm, and a modern browser.
 
-  ## Optional NVIDIA + Vercel deployment
+```bash
+npm install
+npm run dev
+```
 
-  The server function is [api/ask.ts](api/ask.ts). Set these variables in Vercel Project Settings, never in committed source:
+Open the local URL printed by Vite. No API key is needed for the default demo mode.
 
-  ```text
-  NVIDIA_API_KEY=your_key
-  NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
-  NEMOTRON_MODEL=nvidia/nemotron-3-ultra-550b-a55b
-  VITE_ENABLE_NVIDIA=true
-  ```
+## Validation
 
-  Use Vercel's standard Vite preset. The frontend continues to work without the optional integration.
+```bash
+npm run build
+npm run test
+npm run lint
+```
 
-  ## Project structure
+`npm run test` covers deterministic document analysis, severity ordering, citations, unsupported-question behavior, and document comparison. The build and lint commands provide the compile and quality gates for the prototype.
 
-  ```text
-  src/
-    components/   Reusable analysis, navigation, and risk UI
-    data/         Safe sample legal documents
-    lib/          Deterministic analysis and Q&A engine
-    pages/        Overview, library, simplify, compare, risks, Q&A, actions
-  api/            Server-side NVIDIA proxy for optional model mode
-  ```
+### Evaluation evidence
 
-  ## Assumptions and limitations
+| Evaluation area | Evidence in this repository | Verification |
+| --- | --- | --- |
+| Code quality | Typed React components, focused engine module, shared UI components, clean lint gate | `npm run lint` |
+| Security | Server-only NVIDIA secret, bounded requests, no committed secrets, patched dependencies | `npm audit --omit=dev` |
+| Efficiency | Deterministic local analysis, bounded model prompts, model mode is opt-in, no model call in demo mode | Inspect `src/lib/legalEngine.ts` and `api/ask.ts` |
+| Testing | Four behavioral tests for detection, citations, uncertainty, and comparison | `npm test` |
+| Accessibility | Semantic landmarks, labelled controls, keyboard skip link, visible focus treatment, text labels for risk/confidence | Inspect `src/App.tsx` and run a keyboard/screen-reader review |
+| Problem alignment | Six end-to-end legal workflows with source excerpts, actions, and professional-review boundaries | Explore routes from the Overview page |
 
-  - This prototype analyzes plain text sample documents; production ingestion needs secure upload, OCR, retention controls, and tenant isolation.
-  - Heuristic extraction is explainable but is not legal research or attorney review.
-  - Risk scores prioritize review; they do not predict enforceability or case outcome.
-  - A production release should add authenticated storage, accessibility tests, audit logging, red-team tests, and a formal evaluation set across jurisdictions.
+The current automated verification result is: **4 tests passed, build passed, lint passed, and zero npm audit vulnerabilities**. Manual accessibility review remains a human responsibility because automated checks cannot prove screen-reader quality.
 
-  ## Submission checklist
+## NVIDIA + Vercel deployment
 
-  - Publish this project as a **public** GitHub repository named `legaladvisor`.
-  - Keep one branch only and verify the repository is under 10 MB before submission.
-  - Add the final public Vercel URL to the submission form.
-  - Do not commit `.env` files, API keys, private contracts, or generated build output.
+Deploy the Vite project using Vercel's standard Vite preset. Add these environment variables in Vercel Project Settings, never in source control:
+
+```text
+NVIDIA_API_KEY=replace_with_a_rotated_key
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NEMOTRON_MODEL=nvidia/nemotron-3-ultra-550b-a55b
+VITE_ENABLE_NVIDIA=true
+```
+
+The public demo works without the optional integration. If a key has ever been exposed publicly, revoke it and issue a replacement before deployment.
+
+## Repository structure
+
+```text
+api/ask.ts                 Server-side NVIDIA proxy
+src/components/            Shared cards, navigation, badges, and gauges
+src/data/sampleDocuments.ts Safe representative documents
+src/lib/legalEngine.ts     Explainable analysis, comparison, and Q&A logic
+src/pages/                 Overview and task-focused workflows
+tests/                     Executable engine tests
+```
+
+## Assumptions and limitations
+
+- Input is currently the included plain text sample library; secure upload/OCR is future production work.
+- Heuristics can miss unusual drafting and do not establish legal conclusions.
+- The optional model can be wrong; its response must be checked against the source document.
+- Jurisdiction, role, negotiation context, and facts outside the document can change the answer.
+- The correct next step for a consequential decision is review by a qualified professional.
+
+## Submission checklist
+
+- Public repository: `https://github.com/roshanrateria/legaladvisor`
+- Production URL: `https://legal-chi-eight.vercel.app`
+- One branch only: `master`
+- Keep the repository under 10 MB; do not commit `node_modules`, `dist`, `.env`, keys, or private documents.
+- Run `npm run build` and `npm run test` before each submission attempt.
+- Use the challenge submission form to provide the repository and deployed URL.
+
+## License
+
+This prototype is provided for challenge evaluation and demonstration. Add a project license before broader redistribution.

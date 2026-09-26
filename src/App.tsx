@@ -13,10 +13,16 @@ function App() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-parchment-50 paper-texture">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-4 focus:py-3 focus:text-navy-900 focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <MobileNav />
-          <main className="flex-1 px-6 lg:px-10 py-8 max-w-7xl w-full mx-auto">
+          <main id="main-content" tabIndex={-1} className="flex-1 px-6 lg:px-10 py-8 max-w-7xl w-full mx-auto">
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/library" element={<Library />} />
