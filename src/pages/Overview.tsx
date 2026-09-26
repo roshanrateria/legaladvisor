@@ -55,9 +55,10 @@ const FEATURES = [
 export function Overview() {
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700 text-white rounded-2xl paper-texture">
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700 text-white rounded-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gold-400 opacity-10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-navy-500 opacity-20 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-navy-950/20" aria-hidden="true" />
         <div className="relative px-8 py-14 lg:px-14 lg:py-20">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-400/20 border border-gold-400/40 text-gold-200 text-xs uppercase tracking-widest mb-6">
             <Sparkles className="w-3 h-3" />
