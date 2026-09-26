@@ -1,5 +1,7 @@
 const MODEL = process.env.NEMOTRON_MODEL ?? "nvidia/nemotron-3-ultra-550b-a55b";
 const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1";
+const MAX_DOCUMENT_LENGTH = 24_000;
+const MAX_QUESTION_LENGTH = 500;
 
 type RequestLike = { method?: string; body?: unknown };
 type ResponseLike = { status: (code: number) => ResponseLike; json: (body: unknown) => void };
@@ -9,11 +11,14 @@ export default async function handler(request: RequestLike, response: ResponseLi
   const body = (request.body ?? {}) as { document?: unknown; question?: unknown };
   const document = typeof body.document === "string" ? body.document.trim() : "";
   const question = typeof body.question === "string" ? body.question.trim() : "";
-  if (!document || !question || document.length > 100_000 || question.length > 500) {
+  if (!document || !question || document.length > 100_000 || question.length > MAX_QUESTION_LENGTH) {
     return response.status(400).json({ error: "Document or question is invalid." });
   }
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) return response.status(503).json({ error: "NVIDIA integration is not configured." });
+  const context = document.length <= MAX_DOCUMENT_LENGTH
+    ? document
+    : `${document.slice(0, MAX_DOCUMENT_LENGTH * 0.75)}\n\n[Middle of document omitted to control model cost]\n\n${document.slice(-MAX_DOCUMENT_LENGTH * 0.25)}`;
 
   try {
     const upstream = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
@@ -25,7 +30,7 @@ export default async function handler(request: RequestLike, response: ResponseLi
         max_tokens: 500,
         messages: [
           { role: "system", content: "You are a legal information assistant. Answer only from the supplied document. Say when the answer is not supported. Use plain language, do not invent citations, and remind the user this is not legal advice." },
-          { role: "user", content: `DOCUMENT:\n${document}\n\nQUESTION:\n${question}` },
+          { role: "user", content: `DOCUMENT:\n${context}\n\nQUESTION:\n${question}` },
         ],
       }),
     });

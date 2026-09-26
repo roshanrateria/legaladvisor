@@ -250,15 +250,20 @@ function extractSentences(text: string): string[] {
     .filter((s) => s.length > 20);
 }
 
-function findClause(text: string, pattern: RegExp): string | null {
-  const sentences = extractSentences(text);
+function findClause(sentences: string[], pattern: RegExp): string | null {
   const match = sentences.find((s) => pattern.test(s));
   return match ?? null;
 }
 
+const analysisCache = new WeakMap<LegalDocument, DocumentAnalysis>();
+
 export function analyzeDocument(doc: LegalDocument): DocumentAnalysis {
+  const cached = analysisCache.get(doc);
+  if (cached) return cached;
+
   const text = doc.text;
   const { grade, label } = estimateReadingGrade(text);
+  const sentences = extractSentences(text);
 
   const effectiveDate = extractEffectiveDate(text);
   const governingLaw = extractGoverningLaw(text);
@@ -266,7 +271,7 @@ export function analyzeDocument(doc: LegalDocument): DocumentAnalysis {
 
   const clauses: ClauseFinding[] = [];
   for (const rule of CLAUSE_RULES) {
-    const excerpt = findClause(text, rule.pattern);
+    const excerpt = findClause(sentences, rule.pattern);
     if (!excerpt) continue;
     clauses.push({
       category: rule.category,
@@ -299,7 +304,7 @@ export function analyzeDocument(doc: LegalDocument): DocumentAnalysis {
   const recommendedQuestions = buildQuestionsForLawyer(clauses);
   const nextSteps = buildNextSteps(doc, clauses);
 
-  return {
+  const analysis = {
     readingLevelLabel: label,
     readingGrade: grade,
     estimatedMinutes: doc.readingTimeMinutes,
@@ -317,6 +322,8 @@ export function analyzeDocument(doc: LegalDocument): DocumentAnalysis {
     recommendedQuestions,
     nextSteps,
   };
+  analysisCache.set(doc, analysis);
+  return analysis;
 }
 
 function riskToLevel(score: number): RiskLevel {

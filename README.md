@@ -98,7 +98,7 @@ npm run lint
 | --- | --- | --- |
 | Code quality | Typed React components, focused engine module, shared UI components, clean lint gate | `npm run lint` |
 | Security | Server-only NVIDIA secret, bounded requests, no committed secrets, patched dependencies | `npm audit --omit=dev` |
-| Efficiency | Deterministic local analysis, bounded model prompts, model mode is opt-in, no model call in demo mode | Inspect `src/lib/legalEngine.ts` and `api/ask.ts` |
+| Efficiency | Cached document analysis, one-pass sentence tokenization, bounded 24,000-character model context, per-session Q&A response cache, no model call in demo mode | Inspect `src/lib/legalEngine.ts`, `src/pages/QA.tsx`, and `api/ask.ts` |
 | Testing | Four behavioral tests for detection, citations, uncertainty, and comparison | `npm test` |
 | Accessibility | Semantic landmarks, labelled controls, keyboard skip link, visible focus treatment, text labels for risk/confidence | Inspect `src/App.tsx` and run a keyboard/screen-reader review |
 | Problem alignment | Six end-to-end legal workflows with source excerpts, actions, and professional-review boundaries | Explore routes from the Overview page |

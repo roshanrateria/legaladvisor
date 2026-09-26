@@ -16,6 +16,10 @@ describe("legal engine", () => {
     expect(analysis.riskLevel).toBe("elevated");
   });
 
+  it("reuses cached analysis for the same document instance", () => {
+    expect(analyzeDocument(employment)).toBe(analyzeDocument(employment));
+  });
+
   it("answers supported questions with citations", () => {
     const result = answerQuestion(employment, "Can I work for a competitor?");
 

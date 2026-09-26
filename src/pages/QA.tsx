@@ -5,6 +5,13 @@ import { Card } from "../components/AnalysisPanel";
 import { MessageSquareQuote, Send, Sparkles, User } from "lucide-react";
 
 const nvidiaEnabled = import.meta.env.VITE_ENABLE_NVIDIA === "true";
+const MAX_MODEL_CONTEXT = 24_000;
+
+function modelContext(text: string): string {
+  if (text.length <= MAX_MODEL_CONTEXT) return text;
+  const headLength = Math.floor(MAX_MODEL_CONTEXT * 0.75);
+  return `${text.slice(0, headLength)}\n\n[Middle of document omitted to control model cost]\n\n${text.slice(-MAX_MODEL_CONTEXT + headLength)}`;
+}
 
 interface Message {
   id: number;
@@ -22,6 +29,7 @@ export function QA() {
   const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const messageIdRef = useRef(0);
+  const modelAnswersRef = useRef(new Map<string, string>());
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,14 +51,23 @@ export function QA() {
     try {
       let answer = answerQuestion(doc, q);
       if (nvidiaEnabled) {
-        const response = await fetch("/api/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ document: doc.text, question: q }),
-        });
-        if (response.ok) {
-          const remote = (await response.json()) as { answer?: string };
-          if (remote.answer) answer = { ...answer, answer: remote.answer, confidence: "medium" };
+        const cacheKey = `${doc.id}:${q.toLowerCase()}`;
+        const cachedAnswer = modelAnswersRef.current.get(cacheKey);
+        if (cachedAnswer) {
+          answer = { ...answer, answer: cachedAnswer, confidence: "medium" };
+        } else {
+          const response = await fetch("/api/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ document: modelContext(doc.text), question: q }),
+          });
+          if (response.ok) {
+            const remote = (await response.json()) as { answer?: string };
+            if (remote.answer) {
+              modelAnswersRef.current.set(cacheKey, remote.answer);
+              answer = { ...answer, answer: remote.answer, confidence: "medium" };
+            }
+          }
         }
       } else {
         await new Promise((resolve) => setTimeout(resolve, 550));
